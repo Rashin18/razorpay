@@ -12,10 +12,12 @@ class PaymentController extends Controller
 {
     private $razorpay;
 
-     public function __construct()
+    public function __construct()
     {
-        $this->middleware('auth'); // Ensure user is authenticated
-        $this->razorpay = new Api(config('services.razorpay.key'), config('services.razorpay.secret'));
+        $this->razorpay = new Api(
+            'rzp_test_uLGlQp5vZDcWTf',
+            'E8L6FwLh973JjjRpvTWPSUnz'
+        );
     }
 
     public function index()
@@ -25,42 +27,34 @@ class PaymentController extends Controller
 
     public function createOrder(Request $request)
     {
+        $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
         try {
-            // Validate request
-            $validated = $request->validate([
-                'amount' => 'required|numeric|min:1|max:100000'
-            ]);
+            $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
+            $amount = $request->amount * 100;
 
-            // Create order
-            $order = $this->razorpay->order->create([
-                'amount' => $validated['amount'] * 100, // Convert to paise
-                'currency' => 'INR',
-                'receipt' => 'order_'.time(),
-                'payment_capture' => 1
-            ]);
+        $order = $api->order->create([
+            'amount' => $amount,
+            'currency' => 'INR',
+            'receipt' => 'order_' . time(),
+            'payment_capture' => 1
+        ]);
 
-            // Store payment record
-            Payment::create([
-                'user_id' => auth()->id(),
-                'razorpay_order_id' => $order->id,
-                'amount' => $validated['amount'] * 100,
-                'currency' => 'INR',
-                'status' => 'created'
-            ]);
+        Payment::create([
+            'user_id' => auth::id(),
+            'razorpay_order_id' => $order->id,
+            'amount' => $amount,
+            'currency' => 'INR',
+            'status' => 'created'
+        ]);
 
-            return response()->json([
-                'id' => $order->id,
-                'amount' => $order->amount,
-                'currency' => $order->currency
-            ]);
+        return response()->json( [
+        'id' => $order->id,
+        'amount' => $order->amount,
+        'currency' => $order->currency]);
 
-        } catch (\Exception $e) {
-            Log::error('Order creation failed: '.$e->getMessage());
-            return response()->json([
-                'error' => 'Payment processing failed',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+       }catch (\Exception $e) {
+        Log::error('Order creation with transfers failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Payment failed'], 500);
     }
     }
 
@@ -96,7 +90,7 @@ class PaymentController extends Controller
 
     public function userPayments()
     {
-        $payments = Payment::where('user_id', auth::id())->latest()->get();
+        $payments = Payment::where('user_id', Auth::id())->latest()->get();
         return view('my-payments', compact('payments'));
     }
 }
