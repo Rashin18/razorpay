@@ -94,3 +94,4 @@ class PaymentController extends Controller
         return view('my-payments', compact('payments'));
     }
 }
+
