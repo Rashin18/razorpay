@@ -32,7 +32,6 @@ class PaymentController extends Controller
             $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
             $amount = $request->amount * 100;
             
-            \Log::debug('Creating Razorpay order', ['amount' => $amount, 'request_amount' => $request->amount]);
 
         $order = $api->order->create([
             'amount' => $amount,
