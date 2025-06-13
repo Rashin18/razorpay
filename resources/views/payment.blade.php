@@ -32,51 +32,61 @@
 </div>
 
 <script>
-    document.getElementById('payment-form').addEventListener('submit', function (e) {
+    document.getElementById('payment-form').addEventListener('submit', async function (e) {
     e.preventDefault();
-    let amount = parseFloat(document.getElementById('amount').value);
+    
+    try {
+        const amount = parseFloat(document.getElementById('amount').value);
+        console.log('Attempting payment with amount:', amount);
 
-    fetch('/create-order', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ amount: amount })
-    })
-    .then(res => {
-        console.log('Response status:', res.status);
-        if (!res.ok) {
-            throw new Error('Network response was not ok');
+        const response = await fetch('/create-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ amount: amount })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Payment failed');
         }
-        return res.json();
-    })
-    .then(order => {
-        let options = {
+
+        const order = await response.json();
+        console.log('Order created:', order);
+
+        const options = {
             key: 'rzp_test_uLGlQp5vZDcWTf',
             amount: order.amount,
             currency: order.currency,
-            name: 'Razorpay App',
+            name: 'Your Company Name',
             order_id: order.id,
-            handler: function (response) {
-                fetch('/payment-success', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify(response)
-                })
-                .then(res => res.text())
-                .then(html => document.write(html));
+            handler: async function (response) {
+                try {
+                    const paymentResponse = await fetch('/payment-success', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify(response)
+                    });
+                    const html = await paymentResponse.text();
+                    document.write(html);
+                } catch (error) {
+                    console.error('Payment success handling failed:', error);
+                    alert('Payment verification failed. Please contact support.');
+                }
             }
         };
+
         new Razorpay(options).open();
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Payment failed: ' + error.message);
-    });
+    } catch (error) {
+        console.error('Payment error:', error);
+        alert(`Payment failed: ${error.message}`);
+    }
 });
     </script>
 </body>
