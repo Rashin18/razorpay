@@ -35,6 +35,7 @@
     document.getElementById('payment-form').addEventListener('submit', function (e) {
         e.preventDefault();
         let amount = parseFloat(document.getElementById('amount').value); // converts to float
+        console.log('Amount being sent:', amount); // Add this line
      
 
 fetch('/create-order', {
@@ -48,6 +49,7 @@ fetch('/create-order', {
 })
 
         .then(res => res.json())
+            console.log('Response status:', res.status); // Add this
             .then(order => {
                 let options = {
                     key: 'rzp_test_uLGlQp5vZDcWTf',
