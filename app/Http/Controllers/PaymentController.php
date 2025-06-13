@@ -28,35 +28,34 @@ class PaymentController extends Controller
     public function createOrder(Request $request)
     {
         $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
-
         try {
-            $amount = intval($request->amount * 100); // Convert to paise
+            $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
+            $amount = $request->amount * 100;
 
-            $order = $this->razorpay->order->create([
-                'amount' => $amount,
-                'currency' => 'INR',
-                'receipt' => 'order_' . time(),
-                'payment_capture' => 1
-            ]);
+        $order = $api->order->create([
+            'amount' => $amount,
+            'currency' => 'INR',
+            'receipt' => 'order_' . time(),
+            'payment_capture' => 1
+        ]);
 
-            Payment::create([
-                'user_id' => Auth::id(),
-                'razorpay_order_id' => $order->id,
-                'amount' => $amount,
-                'currency' => 'INR',
-                'status' => 'created'
-            ]);
+        Payment::create([
+            'user_id' => auth::id(),
+            'razorpay_order_id' => $order->id,
+            'amount' => $amount,
+            'currency' => 'INR',
+            'status' => 'created'
+        ]);
 
-            return response()->json([
-                'id' => $order->id,
-                'amount' => $order->amount,
-                'currency' => $order->currency
-            ]);
+        return response()->json( [
+        'id' => $order->id,
+        'amount' => $order->amount,
+        'currency' => $order->currency]);
 
-        } catch (\Exception $e) {
-            Log::error('Order creation failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Payment failed'], 500);
-        }
+       }catch (\Exception $e) {
+        Log::error('Order creation with transfers failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Payment failed'], 500);
+    }
     }
 
     public function paymentSuccess(Request $request)
@@ -67,27 +66,21 @@ class PaymentController extends Controller
             'razorpay_signature' => 'required'
         ]);
 
-        try {
-            $this->razorpay->utility->verifyPaymentSignature([
-                'razorpay_order_id' => $request->razorpay_order_id,
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-            ]);
+        $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
 
-            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
+        $this->razorpay->utility->verifyPaymentSignature([
+            'razorpay_order_id' => $request->razorpay_order_id,
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
+        ]);
 
-            $payment->update([
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-                'status' => 'success'
-            ]);
+        $payment->update([
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
+            'status' => 'success'
+        ]);
 
-            return view('payment-success', compact('payment'));
-
-        } catch (\Exception $e) {
-            Log::error('Payment verification failed: ' . $e->getMessage());
-            return redirect()->route('payment.failure');
-        }
+        return view('payment-success', compact('payment'));
     }
 
     public function paymentFailure()
@@ -101,4 +94,3 @@ class PaymentController extends Controller
         return view('my-payments', compact('payments'));
     }
 }
-
