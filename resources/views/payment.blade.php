@@ -35,9 +35,7 @@
     document.getElementById('payment-form').addEventListener('submit', function (e) {
         e.preventDefault();
         let amount = parseFloat(document.getElementById('amount').value); // converts to float
-        let amountInPaise = Math.round(amount * 100);
-
-        console.log("Sending amount:", amountInPaise); 
+         
 
 fetch('/create-order', {
     method: 'POST',
