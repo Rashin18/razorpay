@@ -45,6 +45,7 @@ fetch('/create-order', {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
     },
     body: JSON.stringify({ amount: amount })
+     console.log('Amount being sent:', amount); 
  
 })
 
