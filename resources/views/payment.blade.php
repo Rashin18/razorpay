@@ -49,7 +49,6 @@ fetch('/create-order', {
 })
 
         .then(res => res.json())
-            console.log('Response status:', res.status); // Add this
             .then(order => {
                 let options = {
                     key: 'rzp_test_uLGlQp5vZDcWTf',
