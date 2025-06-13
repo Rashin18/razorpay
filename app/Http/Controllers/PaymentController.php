@@ -27,11 +27,7 @@ class PaymentController extends Controller
 
     public function createOrder(Request $request)
     {
-        \Log::info('Received payment request', [
-        'amount' => $request->amount,
-        'ip' => $request->ip(),
-        'user_agent' => $request->userAgent()
-    ]);
+       
         $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
         try {
             $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
