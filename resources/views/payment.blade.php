@@ -33,49 +33,51 @@
 
 <script>
     document.getElementById('payment-form').addEventListener('submit', function (e) {
-        e.preventDefault();
-        let amount = parseFloat(document.getElementById('amount').value); // converts to float
+    e.preventDefault();
+    let amount = parseFloat(document.getElementById('amount').value);
 
-     
-
-fetch('/create-order', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-    },
-    body: JSON.stringify({ amount: amount })
- 
-})
+    fetch('/create-order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ amount: amount })
+    })
     .then(res => {
-        console.log('Response status:', res.status); // Add this
+        console.log('Response status:', res.status);
+        if (!res.ok) {
+            throw new Error('Network response was not ok');
+        }
         return res.json();
     })
-
-        .then(res => res.json())
-            .then(order => {
-                let options = {
-                    key: 'rzp_test_uLGlQp5vZDcWTf',
-                    amount: order.amount,
-                    currency: order.currency,
-                    name: 'Razorpay App',
-                    order_id: order.id,
-                    handler: function (response) {
-                        fetch('/payment-success', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify(response)
-                        })
-                        .then(res => res.text())
-                        .then(html => document.write(html));
-                    }
-                };
-                new Razorpay(options).open();
-            });
-        });
+    .then(order => {
+        let options = {
+            key: 'rzp_test_uLGlQp5vZDcWTf',
+            amount: order.amount,
+            currency: order.currency,
+            name: 'Razorpay App',
+            order_id: order.id,
+            handler: function (response) {
+                fetch('/payment-success', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(response)
+                })
+                .then(res => res.text())
+                .then(html => document.write(html));
+            }
+        };
+        new Razorpay(options).open();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Payment failed: ' + error.message);
+    });
+});
     </script>
 </body>
 </html>
