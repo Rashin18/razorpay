@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Razorpay\Api\Api;
 use App\Models\Payment;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
@@ -13,7 +14,10 @@ class PaymentController extends Controller
 
     public function __construct()
     {
-        $this->razorpay = new Api(config('razorpay.key'), config('razorpay.secret'));
+        $this->razorpay = new Api(
+            'rzp_test_uLGlQp5vZDcWTf',
+            'E8L6FwLh973JjjRpvTWPSUnz'
+        );
     }
 
     public function index()
@@ -23,63 +27,60 @@ class PaymentController extends Controller
 
     public function createOrder(Request $request)
     {
-        $request->validate([
-            'amount' => 'required|numeric|min:1',
-        ]);
+        $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
+        try {
+            $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
+            $amount = $request->amount * 100;
 
-        $amount = $request->amount * 100; // Razorpay uses paise/pennies
-
-        $order = $this->razorpay->order->create([
+        $order = $api->order->create([
             'amount' => $amount,
             'currency' => 'INR',
             'receipt' => 'order_' . time(),
             'payment_capture' => 1
         ]);
 
-        // Save order details to database
         Payment::create([
+            'user_id' => auth::id(),
             'razorpay_order_id' => $order->id,
-            'amount' => $request->amount,
+            'amount' => $amount,
             'currency' => 'INR',
             'status' => 'created'
         ]);
 
-        return response()->json($order);
+        return response()->json( [
+        'id' => $order->id,
+        'amount' => $order->amount,
+        'currency' => $order->currency]);
+
+       }catch (\Exception $e) {
+        Log::error('Order creation with transfers failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Payment failed'], 500);
+    }
     }
 
     public function paymentSuccess(Request $request)
     {
         $request->validate([
-            'razorpay_payment_id' => 'required',
             'razorpay_order_id' => 'required',
-            'razorpay_signature' => 'required',
+            'razorpay_payment_id' => 'required',
+            'razorpay_signature' => 'required'
         ]);
 
         $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
 
-        // Verify signature
-        $attributes = [
+        $this->razorpay->utility->verifyPaymentSignature([
             'razorpay_order_id' => $request->razorpay_order_id,
             'razorpay_payment_id' => $request->razorpay_payment_id,
             'razorpay_signature' => $request->razorpay_signature,
-        ];
+        ]);
 
-        try {
-            $this->razorpay->utility->verifyPaymentSignature($attributes);
-            
-            $payment->update([
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-                'status' => 'success'
-            ]);
+        $payment->update([
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
+            'status' => 'success'
+        ]);
 
-            return view('payment-success', ['payment' => $payment]);
-
-        } catch (\Exception $e) {
-            Log::error('Payment verification failed: ' . $e->getMessage());
-            $payment->update(['status' => 'failed']);
-            return redirect()->route('payment.failure')->with('error', 'Payment verification failed');
-        }
+        return view('payment-success', compact('payment'));
     }
 
     public function paymentFailure()
@@ -87,56 +88,9 @@ class PaymentController extends Controller
         return view('payment-failure');
     }
 
-    public function handleWebhook(Request $request)
+    public function userPayments()
     {
-        $webhookSecret = config('razorpay.webhook_secret');
-        $webhookSignature = $request->header('X-Razorpay-Signature');
-
-        $payload = $request->getContent();
-
-        try {
-            $this->razorpay->utility->verifyWebhookSignature($payload, $webhookSignature, $webhookSecret);
-
-            $data = json_decode($payload, true);
-            $event = $data['event'];
-
-            Log::info('Razorpay Webhook: ' . $event, $data);
-
-            if ($event === 'payment.captured') {
-                $this->handlePaymentCaptured($data['payload']['payment']['entity']);
-            }
-            // Handle other events as needed
-
-            return response()->json(['status' => 'success']);
-
-        } catch (\Exception $e) {
-            Log::error('Webhook error: ' . $e->getMessage());
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 400);
-        }
-    }
-
-    protected function handlePaymentCaptured($paymentData)
-    {
-        $payment = Payment::where('razorpay_payment_id', $paymentData['id'])->first();
-
-        if (!$payment) {
-            // Payment not found in database, create new record
-            $payment = Payment::create([
-                'razorpay_payment_id' => $paymentData['id'],
-                'razorpay_order_id' => $paymentData['order_id'],
-                'amount' => $paymentData['amount'] / 100,
-                'currency' => $paymentData['currency'],
-                'status' => 'captured',
-                'payload' => $paymentData
-            ]);
-        } else {
-            // Update existing payment
-            $payment->update([
-                'status' => 'captured',
-                'payload' => $paymentData
-            ]);
-        }
-
-        // Here you can trigger other actions like sending emails, updating user subscriptions, etc.
+        $payments = Payment::where('user_id', Auth::id())->latest()->get();
+        return view('my-payments', compact('payments'));
     }
 }
