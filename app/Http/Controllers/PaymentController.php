@@ -27,6 +27,11 @@ class PaymentController extends Controller
 
     public function createOrder(Request $request)
     {
+         \Log::info('Create order request received', [
+        'amount' => $request->amount,
+        'user_id' => auth()->id(),
+        'ip' => $request->ip()
+    ]);
        
         $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
         try {
