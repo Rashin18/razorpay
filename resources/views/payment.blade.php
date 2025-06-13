@@ -2,8 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="cache-control" content="no-cache">
-    <meta http-equiv="pragma" content="no-cache">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,8 +13,8 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header text-center">
-                    <h3>Make a Payment</h3>
+                <div class="card-header">
+                    <h3 class="text-center">Make a Payment</h3>
                 </div>
                 <div class="card-body">
                     <form id="payment-form">
@@ -34,53 +32,45 @@
 </div>
 
 <script>
-document.getElementById('payment-form').addEventListener('submit', function (e) {
-    e.preventDefault();
+    document.getElementById('payment-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        let amount = parseFloat(document.getElementById('amount').value); // converts to float
 
-    let amount = parseFloat(document.getElementById('amount').value);
-    if (isNaN(amount) || amount < 1) {
-        alert("Please enter a valid amount.");
-        return;
-    }
+fetch('/create-order', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ amount: amount })
+ 
+})
 
-    fetch('/create-order', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ amount: amount }) // send INR
-    })
-    .then(res => res.json())
-    .then(order => {
-        console.log("Order created:", order); // debug
-        let options = {
-            key: 'rzp_test_uLGlQp5vZDcWTf',
-            amount: order.amount, // already in paise
-            currency: order.currency,
-            name: 'Razorpay App',
-            order_id: order.id,
-            handler: function (response) {
-                fetch('/payment-success', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify(response)
-                })
-                .then(res => res.text())
-                .then(html => document.write(html));
-            }
-        };
-        new Razorpay(options).open();
-    })
-    .catch(err => {
-        alert("Payment order creation failed.");
-        console.error(err);
-    });
-});
-</script>
+        .then(res => res.json())
+            .then(order => {
+                let options = {
+                    key: 'rzp_test_uLGlQp5vZDcWTf',
+                    amount: order.amount,
+                    currency: order.currency,
+                    name: 'Razorpay App',
+                    order_id: order.id,
+                    handler: function (response) {
+                        fetch('/payment-success', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify(response)
+                        })
+                        .then(res => res.text())
+                        .then(html => document.write(html));
+                    }
+                };
+                new Razorpay(options).open();
+            });
+        });
+    </script>
 </body>
 </html>
 
