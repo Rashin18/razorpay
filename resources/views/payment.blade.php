@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <meta name="csrf-token" content="6bcIi0Gfk7kQPVnYOQ7tcczd3xIUf0ty1TeqeQWb">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
@@ -19,7 +18,8 @@
                 </div>
                 <div class="card-body">
                     <form id="payment-form">
-                        <input type="hidden" name="_token" value="6bcIi0Gfk7kQPVnYOQ7tcczd3xIUf0ty1TeqeQWb" autocomplete="off">                        <div class="mb-3">
+                        @csrf
+                        <div class="mb-3">
                             <label for="amount" class="form-label">Amount (INR)</label>
                             <input type="number" class="form-control" id="amount" name="amount" min="1" required>
                         </div>
