@@ -29,10 +29,10 @@ class PaymentController extends Controller
     {
         $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
         try {
-            $this->razorpay = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
+            $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
             $amount = $request->amount * 100;
 
-        $order = $this->razorpay->order->create([
+        $order = $apį->order->create([
             'amount' => $amount,
             'currency' => 'INR',
             'receipt' => 'order_' . time(),
