@@ -10,7 +10,7 @@ use App\Http\Controllers\WebhookController;
 
 
 Route::middleware(['web', 'auth'])->group(function () {
-    Route::get('/payment', [PaymentController::class, 'index'])->name('payment');
+    Route::get('/', [PaymentController::class, 'index'])->name('payment');
     Route::post('/create-order', [PaymentController::class, 'createOrder'])->name('create.order');
     Route::post('/payment-success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
     // routes/web.php
