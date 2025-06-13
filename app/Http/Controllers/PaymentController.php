@@ -91,7 +91,7 @@ class PaymentController extends Controller
 
     public function userPayments()
     {
-        $payments = Payment::where('user_id', Auth::id())->latest()->get();
+        $payments = Payment::where('user_id', auth::id())->latest()->get();
         return view('my-payments', compact('payments'));
     }
 }
