@@ -53,10 +53,6 @@ class PaymentController extends Controller
 }
 
 
-
-   use Illuminate\Support\Facades\Log;
-use App\Models\Payment;
-
 public function paymentSuccess(Request $request)
 {
     $request->validate([
