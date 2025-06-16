@@ -34,7 +34,12 @@
 <script>
 document.getElementById('payment-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    const amount = parseFloat(document.getElementById('amount').value);
+    const amountInput = document.getElementById('amount').value;
+    const amount = Number(amountInput);
+    if (isNaN(amount) || amount <= 0) {
+        alert("Enter a valid amount");
+        return;
+    }
 
     fetch('/create-order', {
         method: 'POST',
