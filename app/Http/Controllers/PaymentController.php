@@ -100,24 +100,39 @@ public function webhook(Request $request)
 {
     $data = $request->all();
 
-    // Optional: Verify signature using Razorpay secret
-    $webhookSecret = env('RAZORPAY_WEBHOOK_SECRET'); // Set this in your .env
+    // 🔐 Optional: Verify webhook signature
+    $webhookSecret = env('RAZORPAY_WEBHOOK_SECRET');
     $signature = $request->header('X-Razorpay-Signature');
     $payload = $request->getContent();
 
-    $isValid = hash_hmac('sha256', $payload, $webhookSecret);
+    $generatedSignature = hash_hmac('sha256', $payload, $webhookSecret);
 
-    if ($isValid !== $signature) {
-        Log::warning('Invalid webhook signature');
+    if ($signature !== $generatedSignature) {
+        Log::warning('Invalid webhook signature.');
         return response()->json(['status' => 'invalid signature'], 400);
     }
 
-    // ✅ Payment succeeded
-    Log::info('Webhook received:', $data);
+    // 🧾 Store payment info
+    if (isset($data['payload']['payment']['entity'])) {
+        $paymentEntity = $data['payload']['payment']['entity'];
 
-    // You can update order/payment in database here
+        Payment::updateOrCreate(
+            ['order_id' => $paymentEntity['order_id']],
+            [
+                'payment_id' => $paymentEntity['id'],
+                'status'     => $paymentEntity['status'],
+                'amount'     => $paymentEntity['amount'],
+                'currency'   => $paymentEntity['currency'],
+                'email'      => $paymentEntity['email'] ?? null,
+            ]
+        );
 
-    return response()->json(['status' => 'success'], 200);
+        Log::info("Payment saved: " . $paymentEntity['id']);
+
+        return response()->json(['status' => 'success'], 200);
+    }
+
+    return response()->json(['status' => 'no payment data'], 400);
 }
 
 }
