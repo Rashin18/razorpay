@@ -18,7 +18,7 @@ Route::get('/my-payments', [PaymentController::class, 'userPayments'])->middlewa
 Route::post('/webhook', [PaymentController::class, 'webhook']);
 
 // For user redirection after payment (GET)
-Route::get('/payment-success', [PaymentController::class, 'paymentSuccess']);
+Route::post('/payment-success', [PaymentController::class, 'paymentSuccess']);
 
 
 Route::post('/webhook/razorpay', [WebhookController::class, 'handleWebhook']);
