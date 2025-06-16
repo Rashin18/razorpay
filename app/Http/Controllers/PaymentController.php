@@ -33,7 +33,7 @@ class PaymentController extends Controller
             $amount = $request->amount * 100;
 
         $order = $api->order->create([
-            'amount' => $order->amount,
+            'amount' => $amount,
             'currency' => 'INR',
             'receipt' => 'order_' . time(),
             'payment_capture' => 1
@@ -42,14 +42,14 @@ class PaymentController extends Controller
         Payment::create([
             'user_id' => auth::id(),
             'razorpay_order_id' => $order->id,
-            'amount' => $order->amount,
+            'amount' => $amount,
             'currency' => 'INR',
             'status' => 'created'
         ]);
 
         return response()->json( [
         'id' => $order->id,
-        'amount' => $order->amount,
+        'amount' => $amount,
         'currency' => $order->currency]);
 
        }catch (\Exception $e) {
