@@ -50,7 +50,7 @@ fetch('/create-order', {
             .then(order => {
                 let options = {
                     key: 'rzp_test_uLGlQp5vZDcWTf',
-                    amount: $request->amount * 100,
+                    amount: order.$request->amount * 100,
                     currency: order.currency,
                     name: 'Razorpay App',
                     order_id: order.id,
