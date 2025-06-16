@@ -42,7 +42,7 @@ class PaymentController extends Controller
         Payment::create([
             'user_id' => auth::id(),
             'razorpay_order_id' => $order->id,
-            'amount' => $amount,
+            'amount' => $order->amount,
             'currency' => 'INR',
             'status' => 'created'
         ]);
