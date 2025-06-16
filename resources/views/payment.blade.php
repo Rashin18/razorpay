@@ -37,12 +37,8 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
 
     const amountInput = document.getElementById('amount').value;
     const amount = Number(amountInput);
-    if (isNaN(amount) || amount <= 0) {
-        alert("Enter a valid amount");
-        return;
-    }
 
-    console.log("Amount entered (₹):", amount); // ✅ Debug log
+    console.log("Amount entered (₹):", amount);
 
     fetch('/create-order', {
         method: 'POST',
@@ -54,14 +50,14 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     })
     .then(res => res.json())
     .then(order => {
-        console.log("Order response from backend:", order); // ✅ Debug log
+        console.log("Order response from backend:", order);
 
         const options = {
             key: 'rzp_test_uLGlQp5vZDcWTf',
             amount: order.amount,
             currency: order.currency,
             name: 'Razorpay App',
-            description: 'Test Payment',
+            description: 'Test Transaction',
             order_id: order.id,
             handler: function (response) {
                 fetch('/payment-success', {
@@ -76,12 +72,13 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
                 .then(html => document.write(html));
             }
         };
+
         const rzp = new Razorpay(options);
         rzp.open();
     })
-    .catch(err => {
-        console.error("Payment error:", err);
-        alert("Failed to initiate payment.");
+    .catch(error => {
+        console.error("Order response error:", error);
+        alert("Failed to create order.");
     });
 });
 </script>
