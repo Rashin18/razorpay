@@ -40,6 +40,8 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
         alert("Enter a valid amount");
         return;
     }
+    
+    console.log("Amount entered (₹):", amount); 
 
     fetch('/create-order', {
         method: 'POST',
