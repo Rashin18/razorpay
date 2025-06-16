@@ -95,16 +95,16 @@ public function webhook(Request $request)
     $data = $request->all();
 
     // 🔐 Optional: Verify webhook signature
-    $webhookSecret = env('RAZORPAY_WEBHOOK_SECRET');
-    $signature = $request->header('X-Razorpay-Signature');
-    $payload = $request->getContent();
+   // $webhookSecret = env('RAZORPAY_WEBHOOK_SECRET');
+   // $signature = $request->header('X-Razorpay-Signature');
+    //$payload = $request->getContent();
 
-    $generatedSignature = hash_hmac('sha256', $payload, $webhookSecret);
+    //$generatedSignature = hash_hmac('sha256', $payload, $webhookSecret);
 
-    if ($signature !== $generatedSignature) {
-        Log::warning('Invalid webhook signature.');
-        return response()->json(['status' => 'invalid signature'], 400);
-    }
+    //if ($signature !== $generatedSignature) {
+      //  Log::warning('Invalid webhook signature.');
+        //return response()->json(['status' => 'invalid signature'], 400);
+    //}
 
     // 🧾 Store payment info
     if (isset($data['payload']['payment']['entity'])) {
