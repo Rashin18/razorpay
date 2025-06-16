@@ -60,7 +60,7 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
             description: 'Test Transaction',
             order_id: order.id,
             handler: function (response) {
-                 window.location.href = "/payment-success"; , {
+                    fetch('/payment-success', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
