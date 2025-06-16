@@ -31,10 +31,10 @@ class PaymentController extends Controller
         try {
             $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
             $amount = $request->amount * 100;
-            Log::info('Creating order for amount: ' . $request->amount);
+         
 
         $order = $api->order->create([
-            'amount' => $amount,
+            'amount' => amount,
             'currency' => 'INR',
             'receipt' => 'order_' . time(),
             'payment_capture' => 1
@@ -43,7 +43,7 @@ class PaymentController extends Controller
         Payment::create([
             'user_id' => auth::id(),
             'razorpay_order_id' => $order->id,
-            'amount' => $amount,
+            'amount' => amount,
             'currency' => 'INR',
             'status' => 'created'
         ]);
