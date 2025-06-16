@@ -25,12 +25,14 @@ class PaymentController extends Controller
         return view('payment');
     }
 
-    public function createOrder(Request $request)
+   public function createOrder(Request $request)
 {
     $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
 
     try {
+        Log::info('Incoming amount (₹): ' . $request->amount); // 👈 Add this
         $amountInPaise = intval($request->amount * 100);
+        Log::info('Amount in paise: ' . $amountInPaise); // 👈 Add this
 
         $order = $this->razorpay->order->create([
             'amount' => $amountInPaise,
@@ -40,7 +42,7 @@ class PaymentController extends Controller
         ]);
 
         Payment::create([
-            'user_id' => Auth::id(), // FIXED: capital A
+            'user_id' => Auth::id(), // ✅ Make sure 'Auth' is imported correctly
             'razorpay_order_id' => $order->id,
             'amount' => $amountInPaise,
             'currency' => 'INR',
@@ -54,10 +56,11 @@ class PaymentController extends Controller
         ]);
 
     } catch (\Exception $e) {
-        Log::error('Order creation failed: ' . $e->getMessage());
+        Log::error('Order creation failed: ' . $e->getMessage()); // ✅ Key Line
         return response()->json(['error' => 'Payment initiation failed'], 500);
     }
 }
+
 
 
     public function paymentSuccess(Request $request)
