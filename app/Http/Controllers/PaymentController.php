@@ -105,25 +105,7 @@ public function webhook(Request $request)
       //  Log::warning('Invalid webhook signature.');
         //return response()->json(['status' => 'invalid signature'], 400);
     //}
-     $request->validate([
-            'razorpay_order_id' => 'required',
-            'razorpay_payment_id' => 'required',
-            'razorpay_signature' => 'required'
-        ]);
-
-        $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
-
-        $this->razorpay->utility->verifyPaymentSignature([
-            'razorpay_order_id' => $request->razorpay_order_id,
-            'razorpay_payment_id' => $request->razorpay_payment_id,
-            'razorpay_signature' => $request->razorpay_signature,
-        ]);
-
-        $payment->update([
-            'razorpay_payment_id' => $request->razorpay_payment_id,
-            'razorpay_signature' => $request->razorpay_signature,
-            'status' => 'success'
-        ]);
+   
 
     // 🧾 Store payment info
     if (isset($data['payload']['payment']['entity'])) {
