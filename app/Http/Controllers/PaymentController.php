@@ -8,6 +8,7 @@ use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+
 class PaymentController extends Controller
 {
     private $razorpay;
@@ -94,5 +95,30 @@ class PaymentController extends Controller
         $payments = Payment::where('user_id', Auth::id())->latest()->get();
         return view('my-payments', compact('payments'));
     }
+
+public function webhook(Request $request)
+{
+    $data = $request->all();
+
+    // Optional: Verify signature using Razorpay secret
+    $webhookSecret = env('RAZORPAY_WEBHOOK_SECRET'); // Set this in your .env
+    $signature = $request->header('X-Razorpay-Signature');
+    $payload = $request->getContent();
+
+    $isValid = hash_hmac('sha256', $payload, $webhookSecret);
+
+    if ($isValid !== $signature) {
+        Log::warning('Invalid webhook signature');
+        return response()->json(['status' => 'invalid signature'], 400);
+    }
+
+    // ✅ Payment succeeded
+    Log::info('Webhook received:', $data);
+
+    // You can update order/payment in database here
+
+    return response()->json(['status' => 'success'], 200);
+}
+
 }
 
