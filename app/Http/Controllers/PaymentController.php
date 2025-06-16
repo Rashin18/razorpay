@@ -34,7 +34,7 @@ class PaymentController extends Controller
          
 
         $order = $api->order->create([
-            'amount' => $amount,
+            'amount' => $request->amount * 100,
             'currency' => 'INR',
             'receipt' => 'order_' . time(),
             'payment_capture' => 1
