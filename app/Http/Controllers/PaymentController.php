@@ -54,36 +54,45 @@ class PaymentController extends Controller
 
 
 
-    public function paymentSuccess(Request $request)
-    {
-        $request->validate([
-            'razorpay_order_id' => 'required',
-            'razorpay_payment_id' => 'required',
-            'razorpay_signature' => 'required'
+   use Illuminate\Support\Facades\Log;
+use App\Models\Payment;
+
+public function paymentSuccess(Request $request)
+{
+    $request->validate([
+        'razorpay_order_id' => 'required',
+        'razorpay_payment_id' => 'required',
+        'razorpay_signature' => 'required'
+    ]);
+
+    try {
+        // Verify signature
+        $this->razorpay->utility->verifyPaymentSignature([
+            'razorpay_order_id' => $request->razorpay_order_id,
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
         ]);
 
+        // Signature valid, update payment record
         $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
 
-        try {
-            $this->razorpay->utility->verifyPaymentSignature([
-                'razorpay_order_id' => $request->razorpay_order_id,
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-            ]);
+        $payment->update([
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
+            'status' => 'success'
+        ]);
 
-            $payment->update([
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-                'status' => 'success'
-            ]);
+        return view('payment-success', compact('payment'));
 
-            return view('payment-success', compact('payment'));
+    } catch (\Exception $e) {
+        Log::error('Signature verification failed: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            Log::error('Signature verification failed: ' . $e->getMessage());
-            return view('payment-failure');
-        }
+        return view('payment-failure', [
+            'error' => 'Payment verification failed. Please contact support.'
+        ]);
     }
+}
+
 
     public function paymentFailure()
     {
