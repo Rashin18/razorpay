@@ -26,37 +26,39 @@ class PaymentController extends Controller
     }
 
     public function createOrder(Request $request)
-    {
-        $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
+{
+    $request->validate(['amount' => 'required|numeric|min:1|max:100000']);
 
-        try {
-            $amountInPaise = intval($request->amount * 100);
+    try {
+        $amountInPaise = intval($request->amount * 100);
 
-            $order = $this->razorpay->order->create([
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'receipt' => 'order_' . time(),
-                'payment_capture' => 1
-            ]);
+        $order = $this->razorpay->order->create([
+            'amount' => $amountInPaise,
+            'currency' => 'INR',
+            'receipt' => 'order_' . time(),
+            'payment_capture' => 1
+        ]);
 
-            Payment::create([
-                'user_id' => Auth::id(),
-                'razorpay_order_id' => $order->id,
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'status' => 'created'
-            ]);
+        Payment::create([
+            'user_id' => Auth::id(), // FIXED: capital A
+            'razorpay_order_id' => $order->id,
+            'amount' => $amountInPaise,
+            'currency' => 'INR',
+            'status' => 'created'
+        ]);
 
-            return response()->json([
-                'id' => $order->id,
-                'amount' => $order->amount,
-                'currency' => $order->currency
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Order creation failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Payment initiation failed'], 500);
-        }
+        return response()->json([
+            'id' => $order->id,
+            'amount' => $order->amount,
+            'currency' => $order->currency
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Order creation failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Payment initiation failed'], 500);
     }
+}
+
 
     public function paymentSuccess(Request $request)
     {
