@@ -31,6 +31,7 @@ class PaymentController extends Controller
         try {
             $api = new Api('rzp_test_uLGlQp5vZDcWTf', 'E8L6FwLh973JjjRpvTWPSUnz');
             $amount = $request->amount * 100;
+            Log::info('Creating order for amount: ' . $request->amount);
 
         $order = $api->order->create([
             'amount' => $amount,
