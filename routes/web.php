@@ -11,7 +11,7 @@ use App\Http\Controllers\WebhookController;
 
 Route::get('/', [PaymentController::class, 'index']);
 Route::post('/create-order', [PaymentController::class, 'createOrder']);
-///Route::post('/payment-success', [PaymentController::class, 'webhook'])->name('payment.webhook');
+Route::post('/payment-success', [PaymentController::class, 'webhook'])->name('payment.webhook');
 Route::match(['GET', 'POST'], '/payment-success', [PaymentController::class, 'paymentSuccess']);
 
 
