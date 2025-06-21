@@ -15,8 +15,8 @@ class PaymentController extends Controller
     public function __construct()
     {
         $this->razorpay = new Api(
-            'rzp_test_uLGlQp5vZDcWTf',
-            'E8L6FwLh973JjjRpvTWPSUnz'
+            'rzp_test_uLGlQp5vZDcWTf', // your test key
+            'E8L6FwLh973JjjRpvTWPSUnz' // your test secret
         );
     }
 
@@ -25,7 +25,7 @@ class PaymentController extends Controller
         return view('payment');
     }
 
-    // ✅ Leave this as-is (no changes)
+    // ✅ Unchanged — your original createOrder method
     public function createOrder(Request $request)
     {
         $request->validate(['amount' => 'required|numeric|min:1']);
@@ -52,7 +52,7 @@ class PaymentController extends Controller
         }
     }
 
-    // ✅ Handles Razorpay success callback
+    // ✅ POST handler: Verify payment and store result
     public function paymentSuccess(Request $request)
     {
         $request->validate([
@@ -64,40 +64,46 @@ class PaymentController extends Controller
         try {
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
 
+            // Razorpay signature verification
             $this->razorpay->utility->verifyPaymentSignature([
                 'razorpay_order_id' => $request->razorpay_order_id,
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature' => $request->razorpay_signature,
             ]);
 
+            // Update payment record
             $payment->update([
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature' => $request->razorpay_signature,
                 'status' => 'success'
             ]);
 
-            // ✅ Flash payment ID to session
+            // Store payment ID in session for redirect
             session()->flash('payment_id', $payment->id);
 
-            // ✅ Redirect to GET route
             return redirect()->route('payment.success.page');
 
         } catch (\Exception $e) {
-            \Log::error('Payment verification failed: ' . $e->getMessage());
+            Log::error('Payment verification failed: ' . $e->getMessage());
             return view('payment-failure');
         }
     }
 
-    // ✅ New: Show payment success page
+    // ✅ GET route to display success page
     public function showSuccessPage()
     {
         $paymentId = session('payment_id');
 
         if (!$paymentId) {
-            abort(404, 'Payment not found');
+            return view('payment-failure')->with('error', 'Payment not found.');
         }
 
-        $payment = Payment::findOrFail($paymentId);
+        $payment = Payment::find($paymentId);
+
+        if (!$payment) {
+            return view('payment-failure')->with('error', 'Payment record missing.');
+        }
+
         return view('payment-success', compact('payment'));
     }
 
@@ -112,4 +118,5 @@ class PaymentController extends Controller
         return view('my-payments', compact('payments'));
     }
 }
+
 
