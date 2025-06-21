@@ -74,7 +74,7 @@ class PaymentController extends Controller
 
         // ✅ Save Payment after verification
         $payment = Payment::create([
-            'user_id' => Auth::check() ? Auth::id() : null,
+            'user_id' => null,
             'razorpay_order_id' => $request->razorpay_order_id,
             'razorpay_payment_id' => $request->razorpay_payment_id,
             'razorpay_signature' => $request->razorpay_signature,
