@@ -8,13 +8,17 @@ use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+
 class PaymentController extends Controller
 {
     private $razorpay;
 
     public function __construct()
     {
-        $this->razorpay = new Api(env('RAZORPAY_KEY'), env('RAZORPAY_SECRET'));
+        $this->razorpay = new Api(
+            'rzp_test_uLGlQp5vZDcWTf',
+            'E8L6FwLh973JjjRpvTWPSUnz'
+        );
     }
 
     public function index()
@@ -22,41 +26,34 @@ class PaymentController extends Controller
         return view('payment');
     }
 
-    public function createOrder(Request $request)
-    {
-        $request->validate(['amount' => 'required|numeric|min:1']);
+ public function createOrder(Request $request)
+{
+    $request->validate(['amount' => 'required|numeric|min:1']);
 
-        try {
-           $amountInPaise = intval($request->amount * 100);
+    try {
+        $amountInPaise = intval($request->amount * 100);
+        \Log::info('Amount input:', ['rupees' => $request->amount, 'paise' => $amountInPaise]);
 
-           $order = $this->razorpay->order->create([
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'receipt' => 'rcptid_' . time(),
-                'payment_capture' => 1
-            ]);
+        $order = $this->razorpay->order->create([
+            'amount' => $amountInPaise,
+            'currency' => 'INR',
+            'receipt' => 'rcptid_' . time(),
+            'payment_capture' => 1
+        ]);
 
-
-            Payment::create([
-                'user_id' => Auth::id() ?? null,
-                'razorpay_order_id' => $order->id,
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'status' => 'created'
-            ]);
-
-            return response()->json([
-                'id' => $order->id,
-                'amount' => $order->amount,
-                'currency' => $order->currency
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Order creation failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Payment initiation failed'], 500);
-        }
+        return response()->json([
+            'id' => $order->id,
+            'amount' => $order->amount,
+            'currency' => $order->currency
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Razorpay order creation failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Payment initiation failed'], 500);
     }
+}
 
-    public function paymentSuccess(Request $request)
+
+public function paymentSuccess(Request $request)
     {
         $request->validate([
             'razorpay_order_id' => 'required',
@@ -85,4 +82,19 @@ class PaymentController extends Controller
             return view('payment-failure', ['error' => 'Invalid payment signature.']);
         }
     }
+
+
+    public function paymentFailure()
+    {
+        return view('payment-failure');
+    }
+
+    public function userPayments()
+    {
+        $payments = Payment::where('user_id', Auth::id())->latest()->get();
+        return view('my-payments', compact('payments'));
+    }
+
+
+
 }
