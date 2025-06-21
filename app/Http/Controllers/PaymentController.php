@@ -15,8 +15,8 @@ class PaymentController extends Controller
     public function __construct()
     {
         $this->razorpay = new Api(
-            'rzp_test_uLGlQp5vZDcWTf',
-            'E8L6FwLh973JjjRpvTWPSUnz'
+            env('RAZORPAY_KEY'),
+            env('RAZORPAY_SECRET')
         );
     }
 
@@ -31,7 +31,7 @@ class PaymentController extends Controller
 
         try {
             $amountInPaise = intval($request->amount * 100);
-            Log::info('Amount (₹): ' . $request->amount . ' → Paise: ' . $amountInPaise);
+            Log::info('Amount input:', ['rupees' => $request->amount, 'paise' => $amountInPaise]);
 
             $order = $this->razorpay->order->create([
                 'amount' => $amountInPaise,
@@ -44,18 +44,18 @@ class PaymentController extends Controller
             Payment::create([
                 'user_id' => Auth::check() ? Auth::id() : null,
                 'razorpay_order_id' => $order->id,
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
+                'amount' => $order->amount,
+                'currency' => $order->currency,
                 'status' => 'created'
             ]);
 
             return response()->json([
                 'id' => $order->id,
-                'amount' => $amountInPaise,
-                'currency' => 'INR'
+                'amount' => $order->amount,
+                'currency' => $order->currency
             ]);
         } catch (\Exception $e) {
-            Log::error('Order creation failed: ' . $e->getMessage());
+            Log::error('Razorpay order creation failed: ' . $e->getMessage());
             return response()->json(['error' => 'Payment initiation failed'], 500);
         }
     }
@@ -84,7 +84,6 @@ class PaymentController extends Controller
             ]);
 
             return view('payment-success', compact('payment'));
-
         } catch (\Exception $e) {
             Log::error('Payment verification failed: ' . $e->getMessage());
             return view('payment-failure');
