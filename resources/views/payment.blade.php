@@ -43,46 +43,41 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
         return;
     }
 
-    fetch('/create-order', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ amount: amount })
-    })
-    .then(res => res.json())
-    .then(order => {
-        const options = {
-            key: 'rzp_test_uLGlQp5vZDcWTf', // Replace with your Razorpay key
-            amount: order.amount, // in paise
-            currency: order.currency,
-            name: 'Your App Name',
-            description: 'Payment Transaction',
-            order_id: order.id,
-            handler: function (response) {
-                // Send response to your backend
-                fetch('/payment-success', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature
-                    })
-                })
-                .then(() => {
-                    window.location.href = '/payment-success'; // Optional: redirect after success
-                });
-            }
-        };
+fetch('/create-order', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ amount: amount })
+})
+.then(res => res.json())
+.then(order => {
+    console.log("Server returned amount (paise):", order.amount); // Log this!
+    
+    const options = {
+        key: 'rzp_test_...',
+        amount: order.amount, // paise
+        currency: order.currency,
+        name: 'My App',
+        order_id: order.id,
+        handler: function (response) {
+            fetch('/payment-success', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(response)
+            }).then(res => res.text())
+              .then(html => document.write(html));
+        }
+    };
 
-        const rzp = new Razorpay(options);
-        rzp.open();
-    })
+    const rzp = new Razorpay(options);
+    rzp.open();
+});
+
     .catch(error => {
         console.error("Error creating order:", error);
         alert("Something went wrong while creating order.");
