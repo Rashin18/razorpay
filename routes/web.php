@@ -3,15 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
-/*Route::get('/', function () {
-    return view('welcome');
 
-});*/
-
-
-Route::get('/', [PaymentController::class, 'index']);
+Route::get('/payment', [PaymentController::class, 'index']);
 Route::post('/create-order', [PaymentController::class, 'createOrder']);
-Route::post('/payment-success', [PaymentController::class, 'webhook'])->name('payment.webhook');
-Route::get('/my-payments', [PaymentController::class, 'userPayments'])->middleware('auth');
-// routes/web.php
-Route::post('/webhook/razorpay', [WebhookController::class, 'handleWebhook']);
+Route::post('/payment-success', [PaymentController::class, 'paymentSuccess']);
+Route::post('/razorpay/webhook', [WebhookController::class, 'handleWebhook']);
