@@ -62,15 +62,17 @@ class PaymentController extends Controller
     ]);
 
     try {
+        // ✅ Verify Signature
         $this->razorpay->utility->verifyPaymentSignature([
             'razorpay_order_id' => $request->razorpay_order_id,
             'razorpay_payment_id' => $request->razorpay_payment_id,
             'razorpay_signature' => $request->razorpay_signature,
         ]);
 
-        // 👇 Extract order details from Razorpay
+        // ✅ Fetch order to get amount
         $razorpayOrder = $this->razorpay->order->fetch($request->razorpay_order_id);
 
+        // ✅ Save Payment after verification
         $payment = Payment::create([
             'user_id' => Auth::check() ? Auth::id() : null,
             'razorpay_order_id' => $request->razorpay_order_id,
@@ -84,10 +86,11 @@ class PaymentController extends Controller
         return view('payment-success', compact('payment'));
 
     } catch (\Exception $e) {
-        Log::error('Signature verification failed: ' . $e->getMessage());
+        Log::error('❌ Payment verification failed: ' . $e->getMessage());
         return view('payment-failure');
     }
 }
+
 
 
     // ✅ GET route to display success page
