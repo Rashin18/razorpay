@@ -26,17 +26,13 @@ class PaymentController extends Controller
     }
 
     // ✅ Unchanged — your original createOrder method
-   public function createOrder(Request $request)
+public function createOrder(Request $request)
 {
-    \Log::info('Received amount from frontend:', ['amount' => $request->amount]);
-
     $request->validate(['amount' => 'required|numeric|min:1']);
 
     try {
-        $amount = floatval($request->amount);
-        $amountInPaise = intval(round($amount * 100)); // ₹49.99 → 4999
-
-        \Log::info('Storing order with amount in paise:', ['amountInPaise' => $amountInPaise]);
+        $amountInPaise = intval($request->amount * 100);
+        \Log::info('Amount input:', ['rupees' => $request->amount, 'paise' => $amountInPaise]);
 
         $order = $this->razorpay->order->create([
             'amount' => $amountInPaise,
@@ -45,11 +41,11 @@ class PaymentController extends Controller
             'payment_capture' => 1
         ]);
 
-        // ✅ Save in DB
-        Payment::create([
+        // ✅ Save payment in DB for tracking
+        \App\Models\Payment::create([
             'user_id' => Auth::check() ? Auth::id() : null,
             'razorpay_order_id' => $order->id,
-            'amount' => $order->amount, // Already in paise
+            'amount' => $order->amount,
             'currency' => $order->currency,
             'status' => 'created'
         ]);
