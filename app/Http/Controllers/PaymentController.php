@@ -53,41 +53,42 @@ class PaymentController extends Controller
     }
 
     // ✅ POST handler: Verify payment and store result
-    public function paymentSuccess(Request $request)
-    {
-        $request->validate([
-            'razorpay_order_id' => 'required',
-            'razorpay_payment_id' => 'required',
-            'razorpay_signature' => 'required'
+   public function paymentSuccess(Request $request)
+{
+    $request->validate([
+        'razorpay_order_id' => 'required',
+        'razorpay_payment_id' => 'required',
+        'razorpay_signature' => 'required'
+    ]);
+
+    try {
+        $this->razorpay->utility->verifyPaymentSignature([
+            'razorpay_order_id' => $request->razorpay_order_id,
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
         ]);
 
-        try {
-            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
+        // 👇 Extract order details from Razorpay
+        $razorpayOrder = $this->razorpay->order->fetch($request->razorpay_order_id);
 
-            // Razorpay signature verification
-            $this->razorpay->utility->verifyPaymentSignature([
-                'razorpay_order_id' => $request->razorpay_order_id,
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-            ]);
+        $payment = Payment::create([
+            'user_id' => Auth::check() ? Auth::id() : null,
+            'razorpay_order_id' => $request->razorpay_order_id,
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
+            'amount' => $razorpayOrder->amount,
+            'currency' => $razorpayOrder->currency,
+            'status' => 'success',
+        ]);
 
-            // Update payment record
-            $payment->update([
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-                'status' => 'success'
-            ]);
+        return view('payment-success', compact('payment'));
 
-            // Store payment ID in session for redirect
-            session()->flash('payment_id', $payment->id);
-
-            return redirect()->route('payment.success.page');
-
-        } catch (\Exception $e) {
-            Log::error('Payment verification failed: ' . $e->getMessage());
-            return view('payment-failure');
-        }
+    } catch (\Exception $e) {
+        Log::error('Signature verification failed: ' . $e->getMessage());
+        return view('payment-failure');
     }
+}
+
 
     // ✅ GET route to display success page
     public function showSuccessPage()
