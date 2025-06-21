@@ -26,18 +26,17 @@ class PaymentController extends Controller
     }
 
     // ✅ Unchanged — your original createOrder method
-    public function createOrder(Request $request)
+   public function createOrder(Request $request)
 {
+    \Log::info('Received amount from frontend:', ['amount' => $request->amount]);
+
     $request->validate(['amount' => 'required|numeric|min:1']);
 
     try {
         $amount = floatval($request->amount);
-        $amountInPaise = intval($amount * 100); // convert to paise (e.g., ₹50 => 5000)
+        $amountInPaise = intval(round($amount * 100)); // ₹49.99 → 4999
 
-        \Log::info('Creating Razorpay order', [
-            'input_amount' => $amount,
-            'converted_to_paise' => $amountInPaise
-        ]);
+        \Log::info('Storing order with amount in paise:', ['amountInPaise' => $amountInPaise]);
 
         $order = $this->razorpay->order->create([
             'amount' => $amountInPaise,
@@ -46,11 +45,11 @@ class PaymentController extends Controller
             'payment_capture' => 1
         ]);
 
-        // ✅ Save payment in DB
+        // ✅ Save in DB
         Payment::create([
             'user_id' => Auth::check() ? Auth::id() : null,
             'razorpay_order_id' => $order->id,
-            'amount' => $order->amount, // Always in paise
+            'amount' => $order->amount, // Already in paise
             'currency' => $order->currency,
             'status' => 'created'
         ]);
@@ -66,6 +65,7 @@ class PaymentController extends Controller
         return response()->json(['error' => 'Payment initiation failed'], 500);
     }
 }
+
 
 
     // ✅ POST handler: Verify payment and store result
