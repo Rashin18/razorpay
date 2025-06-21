@@ -54,13 +54,13 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     .then(res => res.json())
     .then(order => {
         const options = {
-            key: '{{ env("RAZORPAY_KEY") }}', // Or use your test key directly
-            amount: order.amount,
-            currency: order.currency,
-            name: 'Razorpay App',
-            description: 'Test Payment',
-            order_id: order.id,
-            handler: function (response) {
+             key: '{{ env("RAZORPAY_KEY") }}',
+    amount: order.amount, // ✅ keep in paise
+    currency: order.currency,
+    name: 'Razorpay App',
+    description: 'Test Payment',
+    order_id: order.id,
+    handler: function (response) {
                 fetch('/payment-success', {
                     method: 'POST',
                     headers: {
