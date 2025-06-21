@@ -2,26 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Make a Payment</title>
+    <title>Make Payment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
 <div class="container mt-5">
-    <div class="card mx-auto shadow" style="max-width: 500px;">
-        <div class="card-header text-center">
-            <h4>Make a Payment</h4>
-        </div>
-        <div class="card-body">
-            <form id="payment-form">
-                @csrf
-                <div class="mb-3">
-                    <label for="amount" class="form-label">Amount (INR)</label>
-                    <input type="number" class="form-control" id="amount" name="amount" min="1" required>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header text-center">
+                    <h4>Make a Payment</h4>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Pay Now</button>
-            </form>
+                <div class="card-body">
+                    <form id="payment-form">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount (INR)</label>
+                            <input type="number" step="0.01" min="1" class="form-control" id="amount" name="amount" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Pay Now</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -30,31 +35,42 @@
 document.getElementById('payment-form').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    const amount = parseFloat(document.getElementById('amount').value);
+    const amountInput = document.getElementById('amount').value.trim();
+    const amount = parseFloat(amountInput);
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount");
+        return;
+    }
 
     fetch('/create-order', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]').content
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({ amount: amount })
     })
     .then(res => res.json())
     .then(order => {
+        if (order.error) {
+            alert("Failed to create order");
+            return;
+        }
+
         const options = {
-            key: 'rzp_test_uLGlQp5vZDcWTf',
-            amount: order.amount, // paise
+            key: '{{ env("RAZORPAY_KEY") }}',
+            amount: order.amount,
             currency: order.currency,
-            name: 'Razorpay Test',
-            description: 'Test Transaction',
+            name: 'My App',
+            description: 'Payment',
             order_id: order.id,
             handler: function (response) {
                 fetch('/payment-success', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]').content
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify(response)
                 })
@@ -62,14 +78,16 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
                 .then(html => document.write(html));
             }
         };
+
         const rzp = new Razorpay(options);
         rzp.open();
     })
-    .catch(err => {
-        alert(\"Failed to initiate payment\");
-        console.error(err);
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Error creating payment order.");
     });
 });
 </script>
 </body>
 </html>
+
