@@ -15,8 +15,8 @@ class PaymentController extends Controller
     public function __construct()
     {
         $this->razorpay = new Api(
-            'rzp_test_uLGlQp5vZDcWTf', // your test key
-            'E8L6FwLh973JjjRpvTWPSUnz' // your test secret
+            'rzp_test_uLGlQp5vZDcWTf',
+            'E8L6FwLh973JjjRpvTWPSUnz'
         );
     }
 
@@ -25,51 +25,41 @@ class PaymentController extends Controller
         return view('payment');
     }
 
-    // ✅ Unchanged — your original createOrder method
-public function createOrder(Request $request)
-{
-    $request->validate(['amount' => 'required|numeric|min:1']);
+    public function createOrder(Request $request)
+    {
+        $request->validate(['amount' => 'required|numeric|min:1']);
 
-    try {
-        // Convert amount from rupees to paise
-        $amountInPaise = intval($request->amount * 100);
+        try {
+            $amountInPaise = intval($request->amount * 100);
+            Log::info('Amount (₹): ' . $request->amount . ' → Paise: ' . $amountInPaise);
 
-        \Log::info('Incoming payment request', [
-            'requested_rupees' => $request->amount,
-            'converted_paise' => $amountInPaise
-        ]);
+            $order = $this->razorpay->order->create([
+                'amount' => $amountInPaise,
+                'currency' => 'INR',
+                'receipt' => 'rcptid_' . time(),
+                'payment_capture' => 1
+            ]);
 
-        // Create Razorpay order
-        $order = $this->razorpay->order->create([
-            'amount' => $amountInPaise,
-            'currency' => 'INR',
-            'receipt' => 'rcptid_' . time(),
-            'payment_capture' => 1
-        ]);
+            // Save order to DB
+            Payment::create([
+                'user_id' => Auth::check() ? Auth::id() : null,
+                'razorpay_order_id' => $order->id,
+                'amount' => $amountInPaise,
+                'currency' => 'INR',
+                'status' => 'created'
+            ]);
 
-        // Save to DB using the local `amountInPaise`, not `$order->amount`
-        Payment::create([
-            'user_id' => Auth::check() ? Auth::id() : null,
-            'razorpay_order_id' => $order->id,
-            'amount' => $amountInPaise,
-            'currency' => 'INR',
-            'status' => 'created'
-        ]);
-
-        return response()->json([
-            'id' => $order->id,
-            'amount' => $amountInPaise,  // send local value too
-            'currency' => 'INR'
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Create order failed: ' . $e->getMessage());
-        return response()->json(['error' => 'Payment initiation failed'], 500);
+            return response()->json([
+                'id' => $order->id,
+                'amount' => $amountInPaise,
+                'currency' => 'INR'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Order creation failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Payment initiation failed'], 500);
+        }
     }
-}
 
-
-
-    // ✅ POST handler: Verify payment and store result
     public function paymentSuccess(Request $request)
     {
         $request->validate([
@@ -81,47 +71,24 @@ public function createOrder(Request $request)
         try {
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
 
-            // Razorpay signature verification
             $this->razorpay->utility->verifyPaymentSignature([
                 'razorpay_order_id' => $request->razorpay_order_id,
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature' => $request->razorpay_signature,
             ]);
 
-            // Update payment record
             $payment->update([
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature' => $request->razorpay_signature,
                 'status' => 'success'
             ]);
 
-            // Store payment ID in session for redirect
-            session()->flash('payment_id', $payment->id);
-
-            return redirect()->route('payment.success.page');
+            return view('payment-success', compact('payment'));
 
         } catch (\Exception $e) {
             Log::error('Payment verification failed: ' . $e->getMessage());
             return view('payment-failure');
         }
-    }
-
-    // ✅ GET route to display success page
-    public function showSuccessPage()
-    {
-        $paymentId = session('payment_id');
-
-        if (!$paymentId) {
-            return view('payment-failure')->with('error', 'Payment not found.');
-        }
-
-        $payment = Payment::find($paymentId);
-
-        if (!$payment) {
-            return view('payment-failure')->with('error', 'Payment record missing.');
-        }
-
-        return view('payment-success', compact('payment'));
     }
 
     public function paymentFailure()
