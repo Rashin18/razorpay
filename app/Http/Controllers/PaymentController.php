@@ -26,14 +26,20 @@ class PaymentController extends Controller
     }
 
     // ✅ Unchanged — your original createOrder method
-   public function createOrder(Request $request)
+public function createOrder(Request $request)
 {
     $request->validate(['amount' => 'required|numeric|min:1']);
 
     try {
+        // Convert amount from rupees to paise
         $amountInPaise = intval($request->amount * 100);
-        Log::info('Amount input:', ['rupees' => $request->amount, 'paise' => $amountInPaise]);
 
+        \Log::info('Incoming payment request', [
+            'requested_rupees' => $request->amount,
+            'converted_paise' => $amountInPaise
+        ]);
+
+        // Create Razorpay order
         $order = $this->razorpay->order->create([
             'amount' => $amountInPaise,
             'currency' => 'INR',
@@ -41,25 +47,26 @@ class PaymentController extends Controller
             'payment_capture' => 1
         ]);
 
-        // ✅ Save with correct amount
+        // Save to DB using the local `amountInPaise`, not `$order->amount`
         Payment::create([
             'user_id' => Auth::check() ? Auth::id() : null,
             'razorpay_order_id' => $order->id,
-            'amount' => $amountInPaise, // Use local variable, not $order->amount
-            'currency' => $order->currency,
+            'amount' => $amountInPaise,
+            'currency' => 'INR',
             'status' => 'created'
         ]);
 
         return response()->json([
             'id' => $order->id,
-            'amount' => $order->amount,
-            'currency' => $order->currency
+            'amount' => $amountInPaise,  // send local value too
+            'currency' => 'INR'
         ]);
     } catch (\Exception $e) {
-        Log::error('Razorpay order creation failed: ' . $e->getMessage());
+        \Log::error('Create order failed: ' . $e->getMessage());
         return response()->json(['error' => 'Payment initiation failed'], 500);
     }
 }
+
 
 
     // ✅ POST handler: Verify payment and store result
