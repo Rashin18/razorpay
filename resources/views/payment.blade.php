@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Payment</title>
+    <title>Make a Payment</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -38,7 +38,10 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     const amountInput = document.getElementById('amount').value;
     const amount = Number(amountInput);
 
-    console.log("Amount entered (₹):", amount);
+    if (isNaN(amount) || amount < 1) {
+        alert("Please enter a valid amount.");
+        return;
+    }
 
     fetch('/create-order', {
         method: 'POST',
@@ -50,17 +53,15 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     })
     .then(res => res.json())
     .then(order => {
-        console.log("Order response from backend:", order);
-
         const options = {
-            key: 'rzp_test_uLGlQp5vZDcWTf',
+            key: '{{ env("RAZORPAY_KEY") }}', // Or use your test key directly
             amount: order.amount,
             currency: order.currency,
             name: 'Razorpay App',
-            description: 'Test Transaction',
+            description: 'Test Payment',
             order_id: order.id,
             handler: function (response) {
-                    fetch('/payment-success', {
+                fetch('/payment-success', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -77,11 +78,12 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
         rzp.open();
     })
     .catch(error => {
-        console.error("Order response error:", error);
-        alert("Failed to create order.");
+        console.error("Order creation error:", error);
+        alert("Something went wrong while initiating payment.");
     });
 });
 </script>
 </body>
 </html>
+
 
