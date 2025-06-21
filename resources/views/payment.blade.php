@@ -35,8 +35,9 @@
 document.getElementById('payment-form').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    const amountInput = document.getElementById('amount').value;
-    const amount = Number(amountInput);
+    const amountInput = document.getElementById('amount').value.trim();
+    const amount = parseFloat(amountInput);
+
 
     if (isNaN(amount) || amount < 1) {
         alert("Please enter a valid amount.");
