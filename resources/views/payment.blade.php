@@ -14,14 +14,14 @@
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-header text-center">
-                    <h4>Make a Payment</h4>
+                    <h4>💳 Make a Payment</h4>
                 </div>
                 <div class="card-body">
                     <form id="payment-form">
                         @csrf
                         <div class="mb-3">
                             <label for="amount" class="form-label">Amount (INR)</label>
-                            <input type="number" class="form-control" id="amount" name="amount" min="1" required>
+                            <input type="number" step="0.01" class="form-control" id="amount" name="amount" min="1" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Pay Now</button>
                     </form>
@@ -38,9 +38,8 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     const amountInput = document.getElementById('amount').value.trim();
     const amount = parseFloat(amountInput);
 
-
-    if (isNaN(amount) || amount < 1) {
-        alert("Please enter a valid amount.");
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount");
         return;
     }
 
@@ -55,42 +54,43 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     .then(res => res.json())
     .then(order => {
         const options = {
-             key: '{{ env("RAZORPAY_KEY") }}',
-    amount: order.amount, // ✅ keep in paise
-    currency: order.currency,
-    name: 'Razorpay App',
-    description: 'Test Payment',
-    order_id: order.id,
-    handler: function (response) {
-    fetch('/payment-success', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature
-        })
-    }).then(() => {
-        window.location.href = '/payment-success';
-    });
-}
-
-
+            key: 'rzp_test_uLGlQp5vZDcWTf', // Replace with your Razorpay key
+            amount: order.amount, // in paise
+            currency: order.currency,
+            name: 'Your App Name',
+            description: 'Payment Transaction',
+            order_id: order.id,
+            handler: function (response) {
+                // Send response to your backend
+                fetch('/payment-success', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                })
+                .then(() => {
+                    window.location.href = '/payment-success'; // Optional: redirect after success
+                });
+            }
         };
 
         const rzp = new Razorpay(options);
         rzp.open();
     })
     .catch(error => {
-        console.error("Order creation error:", error);
-        alert("Something went wrong while initiating payment.");
+        console.error("Error creating order:", error);
+        alert("Something went wrong while creating order.");
     });
 });
 </script>
 </body>
 </html>
+
 
 
