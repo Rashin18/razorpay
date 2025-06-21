@@ -27,13 +27,15 @@ class PaymentController extends Controller
         $request->validate(['amount' => 'required|numeric|min:1']);
 
         try {
-            $amountInPaise = intval($request->amount * 100);
-            $order = $this->razorpay->order->create([
+           $amountInPaise = intval($request->amount * 100);
+
+           $order = $this->razorpay->order->create([
                 'amount' => $amountInPaise,
                 'currency' => 'INR',
-                'receipt' => 'rcpt_' . time(),
+                'receipt' => 'rcptid_' . time(),
                 'payment_capture' => 1
             ]);
+
 
             Payment::create([
                 'user_id' => Auth::id() ?? null,
