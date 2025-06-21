@@ -27,38 +27,46 @@ class PaymentController extends Controller
 
     // ✅ Unchanged — your original createOrder method
     public function createOrder(Request $request)
-    {
-        $request->validate(['amount' => 'required|numeric|min:1']);
+{
+    $request->validate(['amount' => 'required|numeric|min:1']);
 
-        try {
-            $amountInPaise = intval($request->amount * 100);
-            \Log::info('Amount input:', ['rupees' => $request->amount, 'paise' => $amountInPaise]);
+    try {
+        $amount = floatval($request->amount);
+        $amountInPaise = intval($amount * 100); // convert to paise (e.g., ₹50 => 5000)
 
-            $order = $this->razorpay->order->create([
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'receipt' => 'rcptid_' . time(),
-                'payment_capture' => 1
-            ]);
+        \Log::info('Creating Razorpay order', [
+            'input_amount' => $amount,
+            'converted_to_paise' => $amountInPaise
+        ]);
 
-            Payment::create([
-                   'user_id' => Auth::id() ?? null,
-                   'razorpay_order_id' => $order->id,
-                   'amount' => $amountInPaise,
-                   'currency' => 'INR',
-                   'status' => 'created'
-            ]);
+        $order = $this->razorpay->order->create([
+            'amount' => $amountInPaise,
+            'currency' => 'INR',
+            'receipt' => 'rcptid_' . time(),
+            'payment_capture' => 1
+        ]);
 
-            return response()->json([
-                'id' => $order->id,
-                'amount' => $order->amount,
-                'currency' => $order->currency
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Razorpay order creation failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Payment initiation failed'], 500);
-        }
+        // ✅ Save payment in DB
+        Payment::create([
+            'user_id' => Auth::check() ? Auth::id() : null,
+            'razorpay_order_id' => $order->id,
+            'amount' => $order->amount, // Always in paise
+            'currency' => $order->currency,
+            'status' => 'created'
+        ]);
+
+        return response()->json([
+            'id' => $order->id,
+            'amount' => $order->amount,
+            'currency' => $order->currency
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Razorpay order creation failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Payment initiation failed'], 500);
     }
+}
+
 
     // ✅ POST handler: Verify payment and store result
     public function paymentSuccess(Request $request)
