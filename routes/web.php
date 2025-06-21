@@ -4,19 +4,25 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 
-// Payment UI Page
+// 🏠 Home - Show payment form
 Route::get('/', [PaymentController::class, 'index']);
 
-// Order creation (AJAX)
+// 💳 Create Razorpay order (AJAX)
 Route::post('/create-order', [PaymentController::class, 'createOrder']);
 
-// Payment success callback (from Razorpay JS handler)
+// ✅ Razorpay payment handler (called from JS handler after success)
+Route::post('/payment-success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
 
-Route::get('/payment-success', [PaymentController::class, 'showSuccessPage'])->name('payment.success');
+// ✅ Show payment success page (GET, after session redirect)
+Route::get('/payment-success', [PaymentController::class, 'showSuccessPage'])->name('payment.success.page');
 
-// Logged-in user's payment history
+// ❌ Show payment failure page (optional)
+Route::get('/payment-failure', [PaymentController::class, 'paymentFailure'])->name('payment.failure');
+
+// 📄 View all past payments (must be logged in)
 Route::get('/my-payments', [PaymentController::class, 'userPayments'])->middleware('auth');
 
-// Razorpay Webhook endpoint (must match what's set in dashboard)
-Route::post('/webhook/razorpay', [WebhookController::class, 'handleWebhook'])->name('webhook.razorpay');
+// 🔔 Razorpay Webhook endpoint (POST from Razorpay)
+Route::post('/webhook/razorpay', [WebhookController::class, 'handleWebhook']);
+
 
