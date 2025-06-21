@@ -54,34 +54,35 @@ class PaymentController extends Controller
 
 
 public function paymentSuccess(Request $request)
-    {
-        $request->validate([
-            'razorpay_order_id' => 'required',
-            'razorpay_payment_id' => 'required',
-            'razorpay_signature' => 'required'
+{
+    $request->validate([
+        'razorpay_order_id' => 'required',
+        'razorpay_payment_id' => 'required',
+        'razorpay_signature' => 'required'
+    ]);
+
+    try {
+        $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
+
+        $this->razorpay->utility->verifyPaymentSignature([
+            'razorpay_order_id' => $request->razorpay_order_id,
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
         ]);
 
-        try {
-            $this->razorpay->utility->verifyPaymentSignature([
-                'razorpay_order_id' => $request->razorpay_order_id,
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-            ]);
+        $payment->update([
+            'razorpay_payment_id' => $request->razorpay_payment_id,
+            'razorpay_signature' => $request->razorpay_signature,
+            'status' => 'success'
+        ]);
 
-            $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
-            $payment->update([
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-                'status' => 'success'
-            ]);
+        return view('payment-success', compact('payment'));
 
-            return view('payment-success', compact('payment'));
-
-        } catch (\Exception $e) {
-            Log::error('Signature verification failed: ' . $e->getMessage());
-            return view('payment-failure', ['error' => 'Invalid payment signature.']);
-        }
+    } catch (\Exception $e) {
+        \Log::error('Payment verification failed: ' . $e->getMessage());
+        return view('payment-failure');
     }
+}
 
 
     public function paymentFailure()
