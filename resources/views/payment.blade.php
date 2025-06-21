@@ -56,7 +56,7 @@ fetch('/create-order', {
     console.log("Server returned amount (paise):", order.amount); // Log this!
     
     const options = {
-        key: 'rzp_test_...',
+        key: 'rzp_test_uLGlQp5vZDcWTf',
         amount: order.amount, // paise
         currency: order.currency,
         name: 'My App',
