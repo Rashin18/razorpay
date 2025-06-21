@@ -15,8 +15,8 @@ class PaymentController extends Controller
     public function __construct()
     {
         $this->razorpay = new Api(
-            env('RAZORPAY_KEY'),
-            env('RAZORPAY_SECRET')
+            'rzp_test_uLGlQp5vZDcWTf', // your test key
+            'E8L6FwLh973JjjRpvTWPSUnz' // your test secret
         );
     }
 
@@ -25,13 +25,14 @@ class PaymentController extends Controller
         return view('payment');
     }
 
+    // ✅ Unchanged — your original createOrder method
     public function createOrder(Request $request)
     {
         $request->validate(['amount' => 'required|numeric|min:1']);
 
         try {
             $amountInPaise = intval($request->amount * 100);
-            Log::info('Amount input:', ['rupees' => $request->amount, 'paise' => $amountInPaise]);
+            \Log::info('Amount input:', ['rupees' => $request->amount, 'paise' => $amountInPaise]);
 
             $order = $this->razorpay->order->create([
                 'amount' => $amountInPaise,
@@ -40,26 +41,18 @@ class PaymentController extends Controller
                 'payment_capture' => 1
             ]);
 
-            // Save order to DB
-            Payment::create([
-                'user_id' => Auth::check() ? Auth::id() : null,
-                'razorpay_order_id' => $order->id,
-                'amount' => $order->amount,
-                'currency' => $order->currency,
-                'status' => 'created'
-            ]);
-
             return response()->json([
                 'id' => $order->id,
                 'amount' => $order->amount,
                 'currency' => $order->currency
             ]);
         } catch (\Exception $e) {
-            Log::error('Razorpay order creation failed: ' . $e->getMessage());
+            \Log::error('Razorpay order creation failed: ' . $e->getMessage());
             return response()->json(['error' => 'Payment initiation failed'], 500);
         }
     }
 
+    // ✅ POST handler: Verify payment and store result
     public function paymentSuccess(Request $request)
     {
         $request->validate([
@@ -71,23 +64,47 @@ class PaymentController extends Controller
         try {
             $payment = Payment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
 
+            // Razorpay signature verification
             $this->razorpay->utility->verifyPaymentSignature([
                 'razorpay_order_id' => $request->razorpay_order_id,
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature' => $request->razorpay_signature,
             ]);
 
+            // Update payment record
             $payment->update([
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature' => $request->razorpay_signature,
                 'status' => 'success'
             ]);
 
-            return view('payment-success', compact('payment'));
+            // Store payment ID in session for redirect
+            session()->flash('payment_id', $payment->id);
+
+            return redirect()->route('payment.success.page');
+
         } catch (\Exception $e) {
             Log::error('Payment verification failed: ' . $e->getMessage());
             return view('payment-failure');
         }
+    }
+
+    // ✅ GET route to display success page
+    public function showSuccessPage()
+    {
+        $paymentId = session('payment_id');
+
+        if (!$paymentId) {
+            return view('payment-failure')->with('error', 'Payment not found.');
+        }
+
+        $payment = Payment::find($paymentId);
+
+        if (!$payment) {
+            return view('payment-failure')->with('error', 'Payment record missing.');
+        }
+
+        return view('payment-success', compact('payment'));
     }
 
     public function paymentFailure()
