@@ -41,6 +41,14 @@ class PaymentController extends Controller
                 'payment_capture' => 1
             ]);
 
+            Payment::create([
+                   'user_id' => Auth::id() ?? null,
+                   'razorpay_order_id' => $order->id,
+                   'amount' => $amountInPaise,
+                   'currency' => 'INR',
+                   'status' => 'created'
+            ]);
+
             return response()->json([
                 'id' => $order->id,
                 'amount' => $order->amount,
