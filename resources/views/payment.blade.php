@@ -21,7 +21,8 @@
                         @csrf
                         <div class="mb-3">
                             <label for="amount" class="form-label">Amount (INR)</label>
-                            <input type="number" step="0.01" class="form-control" id="amount" name="amount" min="1" required>
+                           <input type="number" class="form-control" id="amount" name="amount" min="1" step="0.01" required>
+
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Pay Now</button>
                     </form>
@@ -36,12 +37,14 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     e.preventDefault();
 
     const amountInput = document.getElementById('amount').value.trim();
-    const amount = parseFloat(amountInput);
+    const amount = parseFloat(amountInput); // ✅ parseFloat ensures decimal support
 
     if (isNaN(amount) || amount <= 0) {
         alert("Please enter a valid amount");
         return;
     }
+
+    console.log("Sending amount to backend (₹):", amount); // ✅ Debug
 
     fetch('/create-order', {
         method: 'POST',
@@ -49,43 +52,39 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify({ amount: amount })
+        body: JSON.stringify({ amount: amount }) // ✅ Do NOT hardcode this
     })
     .then(res => res.json())
     .then(order => {
+        console.log("Order response from backend:", order);
+
         const options = {
-            key: 'rzp_test_uLGlQp5vZDcWTf', // Replace with your Razorpay key
-            amount: order.amount, // in paise
+            key: 'rzp_test_uLGlQp5vZDcWTf',
+            amount: order.amount,
             currency: order.currency,
-            name: 'Your App Name',
-            description: 'Payment Transaction',
+            name: 'My App',
+            description: 'Test Transaction',
             order_id: order.id,
             handler: function (response) {
-                // Send response to your backend
                 fetch('/payment-success', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify({
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature
-                    })
+                    body: JSON.stringify(response)
                 })
-                .then(() => {
-                    window.location.href = '/payment-success'; // Optional: redirect after success
-                });
+                .then(res => res.text())
+                .then(html => document.write(html));
             }
         };
 
         const rzp = new Razorpay(options);
         rzp.open();
     })
-    .catch(error => {
-        console.error("Error creating order:", error);
-        alert("Something went wrong while creating order.");
+    .catch(err => {
+        console.error("Create order failed:", err);
+        alert("Something went wrong.");
     });
 });
 </script>
