@@ -14,56 +14,59 @@ class WebhookController extends Controller
         $signature = $request->header('X-Razorpay-Signature');
         $secret = env('RAZORPAY_WEBHOOK_SECRET');
 
-        // Validate webhook signature
-        $expectedSignature = hash_hmac('sha256', $payload, $secret);
+        $expected = hash_hmac('sha256', $payload, $secret);
 
-        if (!hash_equals($expectedSignature, $signature)) {
-            Log::error('Webhook signature verification failed.');
+        if (!hash_equals($expected, $signature)) {
+            Log::error('Webhook signature invalid.');
             return response('Invalid signature', 400);
         }
 
         $data = json_decode($payload, true);
 
-        Log::info('Webhook event:', $data);
-
-        if (isset($data['event'])) {
-            switch ($data['event']) {
-                case 'payment.captured':
-                    $this->handlePaymentCaptured($data['payload']['payment']['entity']);
-                    break;
-
-                case 'payment.failed':
-                    $this->handlePaymentFailed($data['payload']['payment']['entity']);
-                    break;
-
-                // You can add more events here as needed
-            }
+        if (!isset($data['event'])) {
+            Log::warning('Webhook without event received.');
+            return response('No event specified', 400);
         }
 
-        return response('Webhook handled', 200);
+        match ($data['event']) {
+            'payment.captured' => $this->handlePaymentCaptured($data['payload']['payment']['entity']),
+            'payment.failed'   => $this->handlePaymentFailed($data['payload']['payment']['entity']),
+            default            => Log::info("Unhandled event: " . $data['event']),
+        };
+
+        return response('Webhook processed', 200);
     }
 
-    private function handlePaymentCaptured($payment)
+    private function handlePaymentCaptured(array $payment)
     {
-        $paymentRecord = Payment::where('razorpay_payment_id', $payment['id'])->first();
+        Payment::updateOrCreate(
+            ['razorpay_payment_id' => $payment['id']],
+            [
+                'order_id' => $payment['order_id'],
+                'status' => 'success',
+                'amount' => $payment['amount'],
+                'currency' => $payment['currency'],
+                'email' => $payment['email'] ?? null,
+            ]
+        );
 
-        if ($paymentRecord) {
-            $paymentRecord->update(['status' => 'success']);
-            Log::info("Payment marked as successful: {$payment['id']}");
-        } else {
-            Log::warning("Payment not found: {$payment['id']}");
-        }
+        Log::info("Payment captured: " . $payment['id']);
     }
 
-    private function handlePaymentFailed($payment)
+    private function handlePaymentFailed(array $payment)
     {
-        $paymentRecord = Payment::where('razorpay_payment_id', $payment['id'])->first();
+        Payment::updateOrCreate(
+            ['razorpay_payment_id' => $payment['id']],
+            [
+                'order_id' => $payment['order_id'],
+                'status' => 'failed',
+                'amount' => $payment['amount'],
+                'currency' => $payment['currency'],
+                'email' => $payment['email'] ?? null,
+            ]
+        );
 
-        if ($paymentRecord) {
-            $paymentRecord->update(['status' => 'failed']);
-            Log::info("Payment marked as failed: {$payment['id']}");
-        } else {
-            Log::warning("Failed payment not found: {$payment['id']}");
-        }
+        Log::info("Payment failed: " . $payment['id']);
     }
 }
+
