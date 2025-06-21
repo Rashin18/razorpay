@@ -67,11 +67,13 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify(response) // should contain all 3 fields
+        body: JSON.stringify(response)
     })
-    .then(res => res.text())
-    .then(html => document.write(html));
+    .then(() => {
+        window.location.href = '/payment-success-page';
+    });
 }
+
         };
 
         const rzp = new Razorpay(options);
