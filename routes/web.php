@@ -12,7 +12,7 @@ Route::post('/create-order', [PaymentController::class, 'createOrder']);
 
 // Payment success callback (from Razorpay JS handler)
 
-Route::get('/payment-success', [PaymentController::class, 'showSuccessPage'])->name('payment.success.page');
+Route::get('/payment-success', [PaymentController::class, 'showSuccessPage'])->name('payment.success');
 
 // Logged-in user's payment history
 Route::get('/my-payments', [PaymentController::class, 'userPayments'])->middleware('auth');
