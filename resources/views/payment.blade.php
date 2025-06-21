@@ -70,7 +70,7 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
         body: JSON.stringify(response)
     })
     .then(() => {
-        window.location.href = '/payment-success-page';
+        window.location.href = '/payment-success'
     });
 }
 
