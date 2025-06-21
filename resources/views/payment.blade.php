@@ -36,14 +36,12 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     e.preventDefault();
 
     const amountInput = document.getElementById('amount').value.trim();
-    const amount = parseFloat(amountInput); // ✅ ensures decimal precision
+    const amount = parseFloat(amountInput);
 
     if (isNaN(amount) || amount <= 0) {
         alert("Please enter a valid amount");
         return;
     }
-
-    console.log("Sending amount to backend (₹):", amount); // ✅ Debug
 
     fetch('/create-order', {
         method: 'POST',
@@ -61,7 +59,7 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
         }
 
         const options = {
-            key: 'rzp_test_uLGlQp5vZDcWTf',
+            key: '{{ env("RAZORPAY_KEY") }}',
             amount: order.amount,
             currency: order.currency,
             name: 'My App',
@@ -77,8 +75,7 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
                     body: JSON.stringify(response)
                 })
                 .then(res => res.text())
-                .then(html => document.write(html))
-                .catch(() => alert("Something went wrong after payment"));
+                .then(html => document.write(html));
             }
         };
 
@@ -86,14 +83,11 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
         rzp.open();
     })
     .catch(error => {
-        console.error("Payment initiation failed:", error);
-        alert("Something went wrong while creating the order.");
+        console.error("Error:", error);
+        alert("Error creating payment order.");
     });
 });
 </script>
 </body>
 </html>
-
-
-
 
