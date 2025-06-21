@@ -67,12 +67,16 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify(response)
-    })
-    .then(() => {
-        window.location.href = '/payment-success'
+        body: JSON.stringify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature
+        })
+    }).then(() => {
+        window.location.href = '/payment-success';
     });
 }
+
 
         };
 
