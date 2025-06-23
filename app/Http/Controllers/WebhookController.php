@@ -14,32 +14,32 @@ class WebhookController extends Controller
         $signature = $request->header('X-Razorpay-Signature');
         $secret = env('RAZORPAY_WEBHOOK_SECRET');
 
+        // 🔐 Signature verification
         $expected = hash_hmac('sha256', $payload, $secret);
-
         if (!hash_equals($expected, $signature)) {
             Log::error('❌ Webhook signature invalid.');
             return response('Invalid signature', 400);
         }
 
         $data = json_decode($payload, true);
-
         if (!isset($data['event'])) {
-            Log::warning('⚠️ Webhook without event received.');
+            Log::warning('⚠️ Webhook received with no event.');
             return response('No event specified', 400);
         }
 
         $event = $data['event'];
+        Log::info("📩 Webhook Event Received: $event");
 
-        switch ($event) {
-            case 'payment.captured':
-                $this->handlePaymentCaptured($data['payload']['payment']['entity']);
-                break;
-            case 'payment.failed':
-                $this->handlePaymentFailed($data['payload']['payment']['entity']);
-                break;
-            default:
-                Log::info("ℹ️ Unhandled event: " . $event);
-        }
+        match ($event) {
+            'payment.captured'              => $this->handlePaymentCaptured($data['payload']['payment']['entity']),
+            'payment.failed'                => $this->handlePaymentFailed($data['payload']['payment']['entity']),
+            'order.paid'                    => Log::info('🧾 Order paid: ' . $data['payload']['order']['entity']['id']),
+            'order.notification.delivered'  => Log::info('📤 Notification delivered.'),
+            'order.notification.failed'     => Log::warning('📭 Notification delivery failed.'),
+            'invoice.paid'                  => Log::info('✅ Invoice paid.'),
+            'settlement.processed'          => Log::info('💸 Settlement processed.'),
+            default                         => Log::info("⚙️ Unhandled webhook event: $event"),
+        };
 
         return response('✅ Webhook processed', 200);
     }
@@ -57,7 +57,7 @@ class WebhookController extends Controller
             ]
         );
 
-        Log::info("✅ Payment captured: " . $payment['id']);
+        Log::info("✅ Payment captured and saved: " . $payment['id']);
     }
 
     private function handlePaymentFailed(array $payment)
@@ -73,8 +73,9 @@ class WebhookController extends Controller
             ]
         );
 
-        Log::info("❌ Payment failed: " . $payment['id']);
+        Log::info("❌ Payment failed and recorded: " . $payment['id']);
     }
 }
+
 
 
