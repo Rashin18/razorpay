@@ -53,7 +53,7 @@ class PaymentController extends Controller
     }
 
     // ✅ POST handler: Verify payment and store result
-   public function paymentSuccess(Request $request)
+  public function paymentSuccess(Request $request)
 {
     $request->validate([
         'razorpay_order_id' => 'required',
@@ -62,34 +62,34 @@ class PaymentController extends Controller
     ]);
 
     try {
-        // ✅ Verify Signature
+        // ✅ Verify signature
         $this->razorpay->utility->verifyPaymentSignature([
-            'razorpay_order_id' => $request->razorpay_order_id,
+            'razorpay_order_id'   => $request->razorpay_order_id,
             'razorpay_payment_id' => $request->razorpay_payment_id,
-            'razorpay_signature' => $request->razorpay_signature,
+            'razorpay_signature'  => $request->razorpay_signature,
         ]);
 
-        // ✅ Fetch order to get amount
-        $razorpayOrder = $this->razorpay->order->fetch($request->razorpay_order_id);
-
-        // ✅ Save Payment after verification
-        $payment = Payment::create([
-            'user_id' => null,
-            'razorpay_order_id' => $request->razorpay_order_id,
-            'razorpay_payment_id' => $request->razorpay_payment_id,
-            'razorpay_signature' => $request->razorpay_signature,
-            'amount' => $razorpayOrder->amount,
-            'currency' => $razorpayOrder->currency,
-            'status' => 'success',
-        ]);
+        // ✅ If signature is valid, create or update payment in DB
+        $payment = Payment::updateOrCreate(
+            ['razorpay_order_id' => $request->razorpay_order_id],
+            [
+                'user_id'              => Auth::check() ? Auth::id() : null,
+                'razorpay_payment_id'  => $request->razorpay_payment_id,
+                'razorpay_signature'   => $request->razorpay_signature,
+                'amount'               => $request->amount ?? 0, // optional, or save separately
+                'currency'             => 'INR',
+                'status'               => 'success'
+            ]
+        );
 
         return view('payment-success', compact('payment'));
 
     } catch (\Exception $e) {
-        Log::error('❌ Payment verification failed: ' . $e->getMessage());
+        \Log::error('Payment verification failed: ' . $e->getMessage());
         return view('payment-failure');
     }
 }
+
 
 
 
