@@ -17,24 +17,31 @@ class WebhookController extends Controller
         $expected = hash_hmac('sha256', $payload, $secret);
 
         if (!hash_equals($expected, $signature)) {
-            Log::error('Webhook signature invalid.');
+            Log::error('❌ Webhook signature invalid.');
             return response('Invalid signature', 400);
         }
 
         $data = json_decode($payload, true);
 
         if (!isset($data['event'])) {
-            Log::warning('Webhook without event received.');
+            Log::warning('⚠️ Webhook without event received.');
             return response('No event specified', 400);
         }
 
-        match ($data['event']) {
-            'payment.captured' => $this->handlePaymentCaptured($data['payload']['payment']['entity']),
-            'payment.failed'   => $this->handlePaymentFailed($data['payload']['payment']['entity']),
-            default            => Log::info("Unhandled event: " . $data['event']),
-        };
+        $event = $data['event'];
 
-        return response('Webhook processed', 200);
+        switch ($event) {
+            case 'payment.captured':
+                $this->handlePaymentCaptured($data['payload']['payment']['entity']);
+                break;
+            case 'payment.failed':
+                $this->handlePaymentFailed($data['payload']['payment']['entity']);
+                break;
+            default:
+                Log::info("ℹ️ Unhandled event: " . $event);
+        }
+
+        return response('✅ Webhook processed', 200);
     }
 
     private function handlePaymentCaptured(array $payment)
@@ -42,15 +49,15 @@ class WebhookController extends Controller
         Payment::updateOrCreate(
             ['razorpay_payment_id' => $payment['id']],
             [
-                'order_id' => $payment['order_id'],
-                'status' => 'success',
-                'amount' => $payment['amount'],
-                'currency' => $payment['currency'],
-                'email' => $payment['email'] ?? null,
+                'razorpay_order_id' => $payment['order_id'],
+                'status'            => 'success',
+                'amount'            => $payment['amount'],
+                'currency'          => $payment['currency'],
+                'email'             => $payment['email'] ?? null,
             ]
         );
 
-        Log::info("Payment captured: " . $payment['id']);
+        Log::info("✅ Payment captured: " . $payment['id']);
     }
 
     private function handlePaymentFailed(array $payment)
@@ -58,15 +65,16 @@ class WebhookController extends Controller
         Payment::updateOrCreate(
             ['razorpay_payment_id' => $payment['id']],
             [
-                'order_id' => $payment['order_id'],
-                'status' => 'failed',
-                'amount' => $payment['amount'],
-                'currency' => $payment['currency'],
-                'email' => $payment['email'] ?? null,
+                'razorpay_order_id' => $payment['order_id'],
+                'status'            => 'failed',
+                'amount'            => $payment['amount'],
+                'currency'          => $payment['currency'],
+                'email'             => $payment['email'] ?? null,
             ]
         );
 
-        Log::info("Payment failed: " . $payment['id']);
+        Log::info("❌ Payment failed: " . $payment['id']);
     }
 }
+
 
