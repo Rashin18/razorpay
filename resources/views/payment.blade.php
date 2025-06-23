@@ -61,24 +61,20 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
             description: 'Payment Transaction',
             order_id: order.id,
             handler: function (response) {
-                // Send response to your backend
-                fetch('/payment-success', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature
-                    })
-                })
-                .then(() => {
-                    window.location.href = '/payment-success'; // Optional: redirect after success
-                });
-            }
-        };
+                   response.amount = amount * 100; // Add amount in paise
+                   fetch('/payment-success', {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json',
+                       'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                     },
+                      body: JSON.stringify(response)
+                   })
+                   .then(res => res.text())
+                   .then(html => document.write(html));
+              }
+
+           };
 
         const rzp = new Razorpay(options);
         rzp.open();
