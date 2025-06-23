@@ -73,7 +73,7 @@ class PaymentController extends Controller
         $payment = Payment::updateOrCreate(
             ['razorpay_order_id' => $request->razorpay_order_id],
             [
-                'user_id'              => Auth::check() ? Auth::id() : null,
+                'user_id'              => optional(Auth::user())->id,
                 'razorpay_payment_id'  => $request->razorpay_payment_id,
                 'razorpay_signature'   => $request->razorpay_signature,
                 'amount'               => $request->amount ?? 0, // optional, or save separately
