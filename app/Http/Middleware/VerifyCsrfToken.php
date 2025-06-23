@@ -19,5 +19,6 @@ class VerifyCsrfToken
     }
     protected $except = [
         'razorpay-webhook',
+        '/webhook/razorpay',
     ];
 }
