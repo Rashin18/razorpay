@@ -20,8 +20,10 @@ Route::get('/payment-success', [PaymentController::class, 'showSuccessPage'])->n
 Route::get('/payment-failure', [PaymentController::class, 'paymentFailure'])->name('payment.failure');
 
 // 📄 View all past payments (must be logged in)
-Route::get('/my-payments', [PaymentController::class, 'userPayments'])->middleware('auth');
-
+//Route::get('/my-payments', [PaymentController::class, 'userPayments'])->middleware('auth');
+Route::get('/login', function () {
+    return 'Please implement login functionality or remove auth check.';
+})->name('login');
 // 🔔 Razorpay Webhook endpoint (POST from Razorpay)
 Route::post('/webhook/razorpay', [WebhookController::class, 'handleWebhook']);
 
