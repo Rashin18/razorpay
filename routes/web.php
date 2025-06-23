@@ -20,7 +20,7 @@ Route::get('/payment-success', [PaymentController::class, 'showSuccessPage'])->n
 Route::get('/payment-failure', [PaymentController::class, 'paymentFailure'])->name('payment.failure');
 
 // 📄 View all past payments (must be logged in)
-Route::get('/my-payment', [PaymentController::class, 'userPayments']->name('payment.payment'));
+Route::get('/my-payments', [PaymentController::class, 'userPayments']);
 
 // 🔔 Razorpay Webhook endpoint (POST from Razorpay)
 Route::post('/webhook/razorpay', [WebhookController::class, 'handleWebhook']);
