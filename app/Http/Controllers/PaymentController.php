@@ -90,10 +90,6 @@ class PaymentController extends Controller
         return view('payment-failure');
     }
 }
-
-
-
-
     // ✅ GET route to display success page
     public function showSuccessPage()
     {
