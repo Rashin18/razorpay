@@ -54,7 +54,7 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
     .then(res => res.json())
     .then(order => {
         const options = {
-            key: 'rzp_test_uLGlQp5vZDcWTf', // Replace with your Razorpay key
+            key: 'rzp_test_Ra9XtlllX8fC3M', // Replace with your Razorpay key
             amount: order.amount, // in paise
             currency: order.currency,
             name: 'Your App Name',
