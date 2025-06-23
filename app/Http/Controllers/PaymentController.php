@@ -40,17 +40,7 @@ class PaymentController extends Controller
                 'receipt' => 'rcptid_' . time(),
                 'payment_capture' => 1
             ]);
-            $payment = Payment::updateOrCreate(
-            ['razorpay_order_id' => $request->razorpay_order_id],
-            [
-                'user_id'              => null,
-                'razorpay_payment_id'  => $request->razorpay_payment_id,
-                'razorpay_signature'   => $request->razorpay_signature,
-                'amount'               => $request->amount ?? 0, // optional, or save separately
-                'currency'             => 'INR',
-                'status'               => 'success'
-            ]
-        );
+            
 
             return response()->json([
                 'id' => $order->id,
@@ -81,7 +71,17 @@ class PaymentController extends Controller
         ]);
 
         // ✅ If signature is valid, create or update payment in DB
-       
+       $payment = Payment::updateOrCreate(
+            ['razorpay_order_id' => $request->razorpay_order_id],
+            [
+                'user_id'              => null,
+                'razorpay_payment_id'  => $request->razorpay_payment_id,
+                'razorpay_signature'   => $request->razorpay_signature,
+                'amount'               => $request->amount ?? 0, // optional, or save separately
+                'currency'             => 'INR',
+                'status'               => 'success'
+            ]
+        );
 
         return view('payment-success', compact('payment'));
 
