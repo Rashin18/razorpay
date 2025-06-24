@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Payment;
+use App\Models\WebhookEvent;
 
 class WebhookController extends Controller
 {
@@ -33,11 +34,11 @@ class WebhookController extends Controller
         match ($event) {
             'payment.captured'              => $this->handlePaymentCaptured($data['payload']['payment']['entity']),
             'payment.failed'                => $this->handlePaymentFailed($data['payload']['payment']['entity']),
-            'order.paid'                    => Log::info('🧾 Order paid: ' . $data['payload']['order']['entity']['id']),
-            'order.notification.delivered'  => Log::info('📤 Notification delivered.'),
-            'order.notification.failed'     => Log::warning('📭 Notification delivery failed.'),
-            'invoice.paid'                  => Log::info('✅ Invoice paid.'),
-            'settlement.processed'          => Log::info('💸 Settlement processed.'),
+            'order.paid'                    => $this->storeGenericEvent('order.paid', $data['payload']['order']['entity']['id'], $data),
+            'order.notification.delivered'  => $this->storeGenericEvent('order.notification.delivered', $data['payload']['order']['entity']['id'], $data),
+            'order.notification.failed'     => $this->storeGenericEvent('order.notification.failed', $data['payload']['order']['entity']['id'], $data),
+            'invoice.paid'                  => $this->storeGenericEvent('invoice.paid', $data['payload']['invoice']['entity']['id'], $data),
+            'settlement.processed'          => $this->storeGenericEvent('settlement.processed', $data['payload']['settlement']['entity']['id'], $data),
             default                         => Log::info("⚙️ Unhandled webhook event: $event"),
         };
 
@@ -75,6 +76,19 @@ class WebhookController extends Controller
 
         Log::info("❌ Payment failed and recorded: " . $payment['id']);
     }
+
+    private function storeGenericEvent(string $eventType, string $entityId, array $payload)
+{
+    WebhookEvent::create([
+        'event_type' => $eventType,
+        'entity_id'  => $entityId,
+        'payload'    => $payload,
+    ]);
+
+    Log::info("📦 Webhook event [$eventType] stored for entity [$entityId]");
+}
+
+
 }
 
 
