@@ -40,6 +40,15 @@ class PaymentController extends Controller
                 'receipt' => 'rcptid_' . time(),
                 'payment_capture' => 1
             ]);
+
+             // ✅ Store order in DB (do not use $request->amount)
+            Payment::create([
+                'user_id' => Auth::check() ? Auth::id() : null,
+                'razorpay_order_id' => $order['id'],
+                'amount' => $order['amount'], // This is already in paise
+                'currency' => $order['currency'],
+                'status' => 'created',
+            ]);
             
 
             return response()->json([
