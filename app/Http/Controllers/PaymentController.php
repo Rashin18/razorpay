@@ -14,10 +14,10 @@ class PaymentController extends Controller
 
     public function __construct()
     {
-        $this->razorpay = new Api(
-            'rzp_test_Ra9XtlllX8fC3M', // your test key
-            'seJ79iEfIGCbyycrmgyTPG9I' // your test secret
-        );
+       $this->razorpay = new Api(
+        config('razorpay.key'),
+        config('razorpay.secret')
+    );
     }
 
     public function index()
