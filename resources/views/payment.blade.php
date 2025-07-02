@@ -57,7 +57,7 @@ document.getElementById('payment-form').addEventListener('submit', function (e) 
             key: 'rzp_test_Ra9XtlllX8fC3M', // Replace with your Razorpay key
             amount: order.amount, // in paise
             currency: order.currency,
-            name: 'Your App Name',
+            name: 'Razorpay',
             description: 'Payment Transaction',
             order_id: order.id,
             handler: function (response) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+/*namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -88,8 +88,14 @@ class WebhookController extends Controller
     Log::info("📦 Webhook event [$eventType] stored for entity [$entityId]");
 }
 
+    public function handle(Request $request)
+    {
+        Log::info('Webhook Received:', $request->all());
 
+        return response()->json(['status' => 'Webhook received']);
+    }
 }
 
 
 
+*/
