@@ -11,8 +11,10 @@ return new class extends Migration {
         Schema::create('webhook_events', function (Blueprint $table) {
             $table->id();
             $table->string('event_type');
-            $table->string('entity_id')->nullable(); // order_id, settlement_id, etc.
-            $table->json('payload')->nullable();
+            $table->string('entity_id')->nullable();
+            $table->text('payload');
+            $table->string('status')->default('received');
+            $table->text('processing_errors')->nullable();
             $table->timestamps();
         });
     }

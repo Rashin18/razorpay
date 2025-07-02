@@ -13,13 +13,13 @@ return new class extends Migration
 {
     Schema::create('payments', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
-        $table->string('razorpay_order_id')->unique();
+        $table->unsignedBigInteger('user_id')->nullable();
+        $table->string('razorpay_order_id');
         $table->string('razorpay_payment_id')->nullable();
         $table->string('razorpay_signature')->nullable();
-        $table->integer('amount'); // in paise
+        $table->integer('amount');
         $table->string('currency')->default('INR');
-        $table->string('status')->default('created'); // created, success, failed
+        $table->string('status')->default('created');
         $table->timestamps();
     });
 }
